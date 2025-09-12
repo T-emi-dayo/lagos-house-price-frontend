@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export default function App() {
   const [formData, setFormData] = useState({
     bedrooms: "",
@@ -32,18 +34,16 @@ export default function App() {
     e.preventDefault();
     setLoading(true);
     setPrediction(null);
+
     try {
-      const res = await axios.post(
-        "https://homely-0xi4.onrender.com",
-        {
-          bedrooms: Number(formData.bedrooms),
-          bathrooms: Number(formData.bathrooms),
-          toilets: Number(formData.toilets),
-          parking_space: Number(formData.parking_space),
-          town: formData.town,
-          title: formData.title
-        }
-      );
+      const res = await axios.post(`${API_URL}/predict`, {
+        bedrooms: Number(formData.bedrooms),
+        bathrooms: Number(formData.bathrooms),
+        toilets: Number(formData.toilets),
+        parking_space: Number(formData.parking_space),
+        town: formData.town,
+        title: formData.title
+      });
       setPrediction(res.data.predicted_price);
     } catch (err) {
       console.error(err);
@@ -54,13 +54,13 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
       <div className="bg-white p-6 rounded-2xl shadow-lg max-w-md w-full">
         <h1 className="text-2xl font-bold mb-4 text-center">
           Lagos House Price Predictor
         </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3">
           {/* Town Dropdown */}
           <select
             name="town"
@@ -70,8 +70,8 @@ export default function App() {
             required
           >
             <option value="">Select Town</option>
-            {towns.map((t, idx) => (
-              <option key={idx} value={t}>{t}</option>
+            {towns.map((t, i) => (
+              <option key={i} value={t}>{t}</option>
             ))}
           </select>
 
@@ -84,60 +84,36 @@ export default function App() {
             required
           >
             <option value="">Select Property Type</option>
-            {titles.map((t, idx) => (
-              <option key={idx} value={t}>{t}</option>
+            {titles.map((t, i) => (
+              <option key={i} value={t}>{t}</option>
             ))}
           </select>
 
           {/* Numeric Inputs */}
-          <input
-            type="number"
-            name="bedrooms"
-            placeholder="Number of Bedrooms"
-            value={formData.bedrooms}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-lg"
-            required
-          />
-          <input
-            type="number"
-            name="bathrooms"
-            placeholder="Number of Bathrooms"
-            value={formData.bathrooms}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-lg"
-            required
-          />
-          <input
-            type="number"
-            name="toilets"
-            placeholder="Number of Toilets"
-            value={formData.toilets}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-lg"
-            required
-          />
-          <input
-            type="number"
-            name="parking_space"
-            placeholder="Parking Space"
-            value={formData.parking_space}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-lg"
-            required
-          />
+          {["bedrooms", "bathrooms", "toilets", "parking_space"].map((field) => (
+            <input
+              key={field}
+              type="number"
+              name={field}
+              placeholder={field.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())}
+              value={formData[field]}
+              onChange={handleChange}
+              className="w-full p-2 border rounded-lg"
+              required
+            />
+          ))}
 
           {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
+            className={`w-full py-2 rounded-lg text-white font-semibold ${loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}
           >
             {loading ? "Predicting..." : "Get Prediction"}
           </button>
         </form>
 
-        {/* Prediction Result */}
+        {/* Prediction Output */}
         {prediction && (
           <div className="mt-4 text-center">
             <p className="text-lg font-semibold">
