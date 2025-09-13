@@ -12,8 +12,10 @@ export default function App() {
     town: "",
     title: ""
   });
+
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const towns = [
     "Ikoyi", "Lekki", "Victoria Island", "Yaba",
@@ -28,12 +30,14 @@ export default function App() {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError(""); // clear errors on input change
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setPrediction(null);
+    setError("");
 
     try {
       const res = await axios.post(`${API_URL}/predict`, {
@@ -44,82 +48,101 @@ export default function App() {
         town: formData.town,
         title: formData.title
       });
-      setPrediction(res.data.predicted_price);
+
+      if (res.data.predicted_price) {
+        setPrediction(res.data.predicted_price);
+      } else {
+        setError("Unexpected response from API.");
+      }
     } catch (err) {
       console.error(err);
-      setPrediction("Error: Could not fetch prediction.");
+      setError("Unable to fetch prediction. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="bg-white p-6 rounded-2xl shadow-lg max-w-md w-full">
-        <h1 className="text-2xl font-bold mb-4 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100 p-4">
+      <div className="bg-white shadow-2xl rounded-2xl p-8 w-full max-w-lg transition-transform hover:scale-[1.01]">
+        <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">
           Lagos House Price Predictor
         </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {/* Town Dropdown */}
-          <select
-            name="town"
-            value={formData.town}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-lg"
-            required
-          >
-            <option value="">Select Town</option>
-            {towns.map((t, i) => (
-              <option key={i} value={t}>{t}</option>
-            ))}
-          </select>
-
-          {/* Title Dropdown */}
-          <select
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-lg"
-            required
-          >
-            <option value="">Select Property Type</option>
-            {titles.map((t, i) => (
-              <option key={i} value={t}>{t}</option>
-            ))}
-          </select>
-
-          {/* Numeric Inputs */}
-          {["bedrooms", "bathrooms", "toilets", "parking_space"].map((field) => (
-            <input
-              key={field}
-              type="number"
-              name={field}
-              placeholder={field.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())}
-              value={formData[field]}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Dropdowns */}
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Town</label>
+            <select
+              name="town"
+              value={formData.town}
               onChange={handleChange}
-              className="w-full p-2 border rounded-lg"
+              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               required
-            />
+            >
+              <option value="">Select Town</option>
+              {towns.map((t, i) => (
+                <option key={i} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-600 mb-1">Property Type</label>
+            <select
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              required
+            >
+              <option value="">Select Property Type</option>
+              {titles.map((t, i) => (
+                <option key={i} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Number Inputs */}
+          {["bedrooms", "bathrooms", "toilets", "parking_space"].map((field) => (
+            <div key={field}>
+              <label className="block text-sm font-medium text-gray-600 mb-1">
+                {field.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())}
+              </label>
+              <input
+                type="number"
+                name={field}
+                value={formData[field]}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                required
+              />
+            </div>
           ))}
+
+          {/* Error message */}
+          {error && <p className="text-red-600 text-center">{error}</p>}
 
           {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-2 rounded-lg text-white font-semibold ${loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}
+            className={`w-full py-2 rounded-lg font-semibold text-white transition-colors ${
+              loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
             {loading ? "Predicting..." : "Get Prediction"}
           </button>
         </form>
 
-        {/* Prediction Output */}
+        {/* Result */}
         {prediction && (
-          <div className="mt-4 text-center">
-            <p className="text-lg font-semibold">
-              {typeof prediction === "string"
-                ? prediction
-                : `Predicted Price: ₦${Number(prediction).toLocaleString()}`}
+          <div className="mt-6 bg-blue-50 p-4 rounded-lg text-center">
+            <p className="text-xl font-semibold text-gray-800">
+              Predicted Price:
+            </p>
+            <p className="text-2xl font-bold text-blue-700">
+              ₦{Number(prediction).toLocaleString()}
             </p>
           </div>
         )}
